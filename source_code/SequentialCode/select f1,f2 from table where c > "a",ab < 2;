@@ -1,4 +1,5 @@
 select f1,f2 from table where c > "a",ab < 2;
+select RNO,NAME from student where MARKS > 1;
 select fabcd from table2 where c > 2;
 select f1,f2 from table where "ab" < 2;
 join table_name1 a table_name2 b where "ab" < 2,c > "a",ab < 2;

@@ -150,6 +150,14 @@ void insertHashTable(string e,int type, int columnNumber, hashTable h){
   n->next=h[key];
   h[key]=n;
 }
+/*void viewTable(table* t){
+	string e;//table name
+	hashTable h;//hash table of the table
+	int numOfColumns;
+	table* next;
+	printf("%s",);
+	for()
+}*/
 void insertTable(string e,int numOfColumns, hashTable h, database d){
 	int key=hash(e,databaseSize);
 	table *t=(table*)malloc(sizeof(table));
@@ -208,16 +216,20 @@ void computeConditionFields(record rec,condition cond,hashTable hT,char* s1,char
 	
 	if(cond.field1Type==2){
 		node* n=findHashTable(cond.f1.col,hT);
+		//printf("<%d, %s, %d>",n->type, n->e, n->columnNumber);
 		switch(n->type){
 			case 0: *i1=0;
 					ind=0;
 					while(rec[n->columnNumber][ind]!='\0'){
-						*i1+=(rec[n->columnNumber][ind]-'0')+(*i1)*10;
+						*i1+=(rec[n->columnNumber][ind++]-'0')+(*i1)*10;
 					}
+					//printf("<num:%d>",*i1);
 					break;
 			case 1:	strcpy(s1,rec[n->columnNumber]);
+					//printf("%s",s1);
 					break;
 		}
+					//debug();
 	}
 	else if(cond.field1Type==0){
 		*i1=cond.f1.constant.number;
@@ -231,7 +243,7 @@ void computeConditionFields(record rec,condition cond,hashTable hT,char* s1,char
 			case 0: *i2=0;
 					ind=0;
 					while(rec[n->columnNumber][ind]!='\0'){
-						*i2+=(rec[n->columnNumber][ind]-'0')+(*i2)*10;
+						*i2+=(rec[n->columnNumber][ind++]-'0')+(*i2)*10;
 					}
 					break;
 			case 1:	strcpy(s2,rec[n->columnNumber]);
@@ -312,19 +324,20 @@ void displayRecord(query q,record rec,hashTable hT){
 	}
 }
 void execute(query q, database d){
+	string filePath;
 	switch(q.type){
 			case 0:
-				string filePath;
+				{
 				filePathFromTableName(filePath,q.qF.tS.tableName);
 				FILE* fp=fopen(filePath,"r");
-				printf("%s",filePath);
+				//printf("%s",filePath);
 				
 				if(!fp){
 					printf("file not found");
 					return;
 				}
 				hashTable hT=findTable(q.qF.tS.tableName,d);
-				table* t=findTableInDatabase(q.qF.tS.tableName,d);
+				
 				int numOfColumns;
 				if(hT!=NULL){//table is already hashed
 					char c;
@@ -335,6 +348,7 @@ void execute(query q, database d){
 					do{
 						fscanf(fp,"%c",&c);
 					}while(c!='\n');
+					table* t=findTableInDatabase(q.qF.tS.tableName,d);
 					numOfColumns=t->numOfColumns;
 				}
 				else{//create hashtable for the table and make an entry in database.
@@ -347,7 +361,8 @@ void execute(query q, database d){
 					for(int i=0; i<numOfColumns; i++){
 						string type;
 						fscanf(fp,"%s %s\t",m[i].fieldName,type);
-						if(strcmp(type,"int")){
+						
+						if(strcmp(type,"int")==0){
 							m[i].type=0;
 						}
 						else 
@@ -356,31 +371,45 @@ void execute(query q, database d){
 						//i gives the index number
 					}
 					insertTable(q.qF.tS.tableName,numOfColumns, hT,d);
+
 				}
 				record rec;
 				while(!feof(fp)){
-					for(int i=0; i<numOfColumns; i++){
+					int i;
+					for(i=0; i<numOfColumns; i++){
 						fscanf(fp,"%s",rec[i]);
 						}
-					int i;
+					
 					for(i=0; i<q.numberOfConditions; i++){
 						int i1=-1, i2=-1; 
 						string s1,s2;
 						s1[0]=s2[0]='~';
 						s1[1]=s2[1]='\0';
 						computeConditionFields(rec,q.cond[i],hT,s1,s2,&i1,&i2);
+						/*printf("\ns1 %s,s2 %s, i1 %d, i2 %d\n",s1,s2,i1,i2);
+						debug();*/
 						if(isFalseCondition(q.cond[i],s1,s2,i1,i2)){
 							break;
 						}
 									
 					}
+					
 					if(i==q.numberOfConditions){
+
 						displayRecord(q, rec,hT);
 					}
 				}
 				break;
-			/*case 1:break;
-			case 2:break;*/
+			}
+
+			case 1:	
+					filePathFromTableName(filePath,q.qF.tJ.tableName1);
+					FILE* fp1=fopen(filePath,"r");
+					filePathFromTableName(filePath,q.qF.tJ.tableName2);
+					FILE* fp2=fopen(filePath,"r");
+
+			
+			/*case 2:break;*/
 		}
 }
 void copyQuery(query *q,query original){
