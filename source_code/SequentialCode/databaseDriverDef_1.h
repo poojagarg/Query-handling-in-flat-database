@@ -83,6 +83,7 @@ typedef struct table{
 	string e;//table name
 	hashTable h;//hash table of the table
 	int numOfColumns;
+	int numOfRecords;
 	table* next;
 }table;
 typedef table** database;
@@ -107,6 +108,11 @@ query extractJoin(char* s, int startIndex);
 void copyJoinType(joinType *j,joinType original);
 void execute(query q);
 void filePathFromTableName(char* filePath, char* fileName);
+void populateHashTable(FILE* fp, int numberOfTables,database d);
+hashTable createHashTable();
+database createDatabase();
+void insertTable(string e,int numOfColumns, int numOfRecords, hashTable h, database d);
+void insertTableMetadata(int numOfColumns,hashTable hT,FILE* fp);
 
 hashTable createHashTable(){
   hashTable h=(hashTable)malloc(sizeof(node*)*hashTableSize );
@@ -115,6 +121,25 @@ hashTable createHashTable(){
   }
   return h;
 }
+
+void populateHashTable(FILE* fp, int numberOfTables,database d){
+	while(numberOfTables--){
+		string s,filePath;
+		int numOfRecords,numOfColumns;
+		hashTable hT;
+		fscanf(fp,"%s",s);
+		filePathFromTableName(filePath,s);
+		printf("%s",filePath);
+		FILE* tFp;
+		tFp=fopen(filePath,"r");
+		hT= createHashTable();
+		fscanf(tFp,"%d,",&numOfColumns);
+		fscanf(tFp,"%d\n",&numOfRecords);
+		insertTableMetadata(numOfColumns,hT,tFp);
+		insertTable(s,numOfColumns,numOfRecords,hT,d);
+		}
+}
+
 database createDatabase(){
 	database d=(database)malloc(sizeof(table*)*databaseSize);
 	for(int i=0; i<databaseSize; i++){
@@ -158,11 +183,12 @@ void insertHashTable(string e,int type, int columnNumber, hashTable h){
 	printf("%s",);
 	for()
 }*/
-void insertTable(string e,int numOfColumns, hashTable h, database d){
+void insertTable(string e,int numOfColumns, int numOfRecords, hashTable h, database d){
 	int key=hash(e,databaseSize);
 	table *t=(table*)malloc(sizeof(table));
 	t->h=h;
 	t->numOfColumns=numOfColumns;
+	t->numOfRecords=numOfRecords;
 	strcpy(t->e,e);
 	t->next=d[key];
 	d[key]=t;
@@ -492,18 +518,11 @@ void execute(query q, database d){
 					printf("file not found");
 					return;
 				}
+				int numOfColumns;
 				hashTable hT=findTable(q.qF.tS.tableName,d);
 				
-				int numOfColumns;
-				if(hT!=NULL){//table is already hashed
-					tableNum(fp,q.qF.tS.tableName,d,&numOfColumns);
-				}
-				else{//create hashtable for the table and make an entry in database.
-					hT= createHashTable();
-					fscanf(fp,"%d\n",&numOfColumns);
-					insertTableMetadata(numOfColumns,hT,fp);
-					insertTable(q.qF.tS.tableName,numOfColumns, hT,d);
-				}
+				tableNum(fp,q.qF.tS.tableName,d,&numOfColumns);
+				
 				record rec;
 				while(!feof(fp)){
 					int i;
@@ -549,25 +568,13 @@ void execute(query q, database d){
 				}
 					int numOfColumns1, numOfColumns2;
 					hashTable hT1=findTable(q.qF.tJ.tableName1,d);
-					if(hT1!=NULL){//table is already hashed
-						tableNum(fp1,q.qF.tJ.tableName1,d,&numOfColumns1);
-					}
-					else{//create hashtable for the table and make an entry in database.
-						hT1= createHashTable();
-						fscanf(fp1,"%d\n",&numOfColumns1);
-						insertTableMetadata(numOfColumns1,hT1,fp1);
-						insertTable(q.qF.tJ.tableName1,numOfColumns1, hT1,d);
-					}
+					
+					tableNum(fp1,q.qF.tJ.tableName1,d,&numOfColumns1);
+					
 					hashTable hT2=findTable(q.qF.tJ.tableName2,d);
-					if(hT2!=NULL){//table is already hashed
-						tableNum(fp2,q.qF.tJ.tableName2,d,&numOfColumns2);
-					}
-					else{//create hashtable for the table and make an entry in database.
-						hT2= createHashTable();
-						fscanf(fp2,"%d\n",&numOfColumns2);
-						insertTableMetadata(numOfColumns2,hT2,fp2);
-						insertTable(q.qF.tJ.tableName1,numOfColumns2, hT2,d);
-					}
+					
+					tableNum(fp2,q.qF.tJ.tableName2,d,&numOfColumns2);
+					
 					record rec1, rec2;
 					while(!feof(fp1)){
 						for(int i=0; i<numOfColumns1; i++){

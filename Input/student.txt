@@ -1,4 +1,4 @@
-4
+4,3
 RNO int	NAME string PHNO string	MARKS int
 056	pooja	926	20
 023 mansi 345 10

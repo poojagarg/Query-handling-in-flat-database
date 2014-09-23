@@ -1,10 +1,30 @@
 #ifndef databaseDriverDef
-	#define databaseDriverDef
-	#include "databaseDriverDef.h"
+	#define databaseDriverDef_1
+	#include "databaseDriverDef_1.h"
 #endif
 
 int main(int argc, char *argv[]){//argv[1]= Path of database directory
+	
 	database d=createDatabase();
+	char tableFilePath[50];
+	string tableName;
+	
+	strcpy(tableName,"tableName");
+	
+	filePathFromTableName(tableFilePath,tableName);
+	printf("%s",tableFilePath);
+	
+	FILE* fp=fopen(tableFilePath,"r");
+	if(!fp){
+		printf("File Not Found");
+		debug();
+	}
+	int numberOfTables;
+	fscanf(fp,"%d", &numberOfTables);
+	populateHashTable(fp,numberOfTables,d);
+	
+
+	
 	do{
 		printf("\nInput query, and type ; to quit\n");
 		char s[queryLength];
