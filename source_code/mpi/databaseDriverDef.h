@@ -84,6 +84,10 @@ typedef struct table{
 	hashTable h;//hash table of the table
 	int numOfColumns;
 	int numOfRecords;
+	/*int fp_ep;
+	int numOfRecords_ep;
+	FILE* fp_r;
+	int numOfRecords_r;*/
 	table* next;
 }table;
 typedef table** database;
@@ -108,10 +112,10 @@ query extractJoin(char* s, int startIndex);
 void copyJoinType(joinType *j,joinType original);
 void execute(query q);
 void filePathFromTableName(char* filePath, char* fileName);
-void populateHashTable(FILE* fp, int numberOfTables,database d);
+void populateHashTable(FILE* fp, int numberOfTables,database *d, int world_rank, int world_size);
 hashTable createHashTable();
 database createDatabase();
-void insertTable(string e,int numOfColumns, int numOfRecords, hashTable h, database d);
+void insertTable(string e,int numOfColumns, int numOfRecords,hashTable h, database *d);
 void insertTableMetadata(int numOfColumns,hashTable hT,FILE* fp);
 
 hashTable createHashTable(){
@@ -122,35 +126,59 @@ hashTable createHashTable(){
   return h;
 }
 
-void populateHashTable(FILE* fp, int numberOfTables,database d){
+void viewDatabase(database d){
+	string e;//table name
+	hashTable h;//hash table of the table
+	int numOfColumns;
+	int numOfRecords;
+	table* next;
+	for(int i=0; i<databaseSize; i++){
+		table* t=d[i];
+		while(t){
+			printf("<%s %d %d>", t->e, t->numOfColumns, t->numOfRecords);
+			t=t->next;
+		}
+	}
+}
+
+void populateHashTable(FILE* fp, int numberOfTables,database *d, int world_rank, int world_size){
 	int flag=0;
-	//while(numberOfTables--){
+	while(numberOfTables--){
 		string s,filePath;
 		int numOfRecords,numOfColumns;
 		hashTable hT;
 		int ind=0;
 		char c;
-		//while(c!='\n'&&c!='^'){
-			
+		c=fgetc(fp);
+		while(c!='\n'&&c!='^'){
+			s[ind++]=c;
 			c=fgetc(fp);
-			printf("%c",c);
-			//s[ind++]=c;
-			//}
+			//printf("%c",c);
+			
+			}
 		s[ind]='\0';
+		//printf("%s",s);
 		if(c=='^')
 			flag=1;
-		//filePathFromTableName(filePath,s);
-		//printf("%s",filePath);
-		/*FILE* tFp;
+		filePathFromTableName(filePath,s);
+		//printf("<%s>",filePath);
+		FILE* tFp;
 		tFp=fopen(filePath,"r");
+		if(!tFp){
+			printf("File not found");
+			return;
+		}
 		hT= createHashTable();
 		fscanf(tFp,"%d,",&numOfColumns);
 		fscanf(tFp,"%d\n",&numOfRecords);
+		
+		
 		insertTableMetadata(numOfColumns,hT,tFp);
+		
 		insertTable(s,numOfColumns,numOfRecords,hT,d);
 		if(flag==1)
 			return;
-		//}*/
+		}
 }
 
 database createDatabase(){
@@ -196,15 +224,19 @@ void insertHashTable(string e,int type, int columnNumber, hashTable h){
 	printf("%s",);
 	for()
 }*/
-void insertTable(string e,int numOfColumns, int numOfRecords, hashTable h, database d){
+
+void insertTable(string e,int numOfColumns, int numOfRecords,hashTable h, database* d){
+	database D=*d;
 	int key=hash(e,databaseSize);
 	table *t=(table*)malloc(sizeof(table));
 	t->h=h;
 	t->numOfColumns=numOfColumns;
 	t->numOfRecords=numOfRecords;
+	
+	
 	strcpy(t->e,e);
-	t->next=d[key];
-	d[key]=t;
+	t->next=D[key];
+	D[key]=t;
 }
 node* findHashTable(string e, hashTable h){
   int key=hash(e, hashTableSize);
@@ -240,8 +272,9 @@ table* findTableInDatabase(string e, database d){
   else return n;
 }
 
-void filePathFromTableName(char* filePath, char* fileName){
-
+void filePathFromTableName(char* filePath, char* file){
+	string fileName;
+	strcpy(fileName,file);
 	strcat(fileName,".txt");
 	
 	strcpy(filePath,"../../input/birt/");
@@ -470,8 +503,8 @@ int isFalseCondition(condition cond, char* s1,char* s2,int i1,int i2){
 	}
 	return 1;
 }
-void displayRecord(query q,record rec,hashTable hT){
-	
+void displayRecord(query q,record rec,hashTable hT, int world_rank){
+	printf("%d: ",world_rank);
 	for(int i=0; i<q.qF.tS.numberOfFields; i++){
 		node* n=findHashTable(q.qF.tS.fieldName[i],hT);
 		printf("%s\t",rec[n->columnNumber]);
@@ -518,11 +551,12 @@ void tableNum(FILE* fp,string tableName,database d,int *numOfColumns){
 	*numOfColumns=t->numOfColumns;
 }
 
-void execute(query q, database d){
+void execute(query q, database d, int world_rank){
 	string filePath;
 	switch(q.type){
 			case 0:
 				{
+					//printf("Entered execute");
 				filePathFromTableName(filePath,q.qF.tS.tableName);
 				FILE* fp=fopen(filePath,"r");
 				//printf("%s",filePath);
@@ -532,12 +566,31 @@ void execute(query q, database d){
 					return;
 				}
 				int numOfColumns;
-				hashTable hT=findTable(q.qF.tS.tableName,d);
-				
-				tableNum(fp,q.qF.tS.tableName,d,&numOfColumns);
-				
+				table* t=findTableInDatabase(q.qF.tS.tableName, d);
+				hashTable hT=t->h;
+				numOfColumns=t->numOfColumns;
+				int numOfRecords=t->numOfRecords/P;
+				int offset=world_rank*numOfRecords;
+				if(world_rank==P-1){
+					numOfRecords+=t->numOfRecords%P;
+				}
+
+				char eat_metaDeta;
+				do{
+					eat_metaDeta=fgetc(fp);
+				}while(eat_metaDeta!='\n');
+				do{
+					eat_metaDeta=fgetc(fp);
+				}while(eat_metaDeta!='\n');
+				//fseek(fp,t->fp_ep,SEEK_SET);
+				for(int i=0; i<offset; i++){
+					do{
+					eat_metaDeta=fgetc(fp);
+					}while(eat_metaDeta!='\n');
+				}
+				//printf(" %d ",numOfRecords);
 				record rec;
-				while(!feof(fp)){
+				while(numOfRecords--){
 					int i;
 					for(i=0; i<numOfColumns; i++){
 						char c;
@@ -548,6 +601,7 @@ void execute(query q, database d){
 							c=fgetc(fp);
 						}
 						rec[i][ind]='\0';
+						//printf("%s",rec[i]);
 						}
 					
 					for(i=0; i<q.numberOfConditions; i++){
@@ -565,90 +619,132 @@ void execute(query q, database d){
 					}
 					
 					if(i==q.numberOfConditions){
-
-						displayRecord(q, rec,hT);
+						//printf("display");	
+						displayRecord(q, rec,hT, world_rank);
 					}
 				}
 				break;
 			}
+			break;
 
-			case 1:	{
+			case 1:{
 					filePathFromTableName(filePath,q.qF.tJ.tableName1);
 					FILE* fp1=fopen(filePath,"r");
-					filePathFromTableName(filePath,q.qF.tJ.tableName2);
-					FILE* fp2=fopen(filePath,"r");
+					
 
-				if(!fp1){
-					printf("file not found");
-					return;
-				}
-				if(!fp2){
-					printf("file not found");
-					return;
-				}
-					int numOfColumns1, numOfColumns2;
-					hashTable hT1=findTable(q.qF.tJ.tableName1,d);
-					
-					tableNum(fp1,q.qF.tJ.tableName1,d,&numOfColumns1);
-					
-					hashTable hT2=findTable(q.qF.tJ.tableName2,d);
-					
-					tableNum(fp2,q.qF.tJ.tableName2,d,&numOfColumns2);
-					
-					record rec1, rec2;
-					while(!feof(fp1)){
-						for(int i=0; i<numOfColumns1; i++){
-							char c;
-						c=fgetc(fp1);
-						int ind=0;
-						while(c!='\t'&&c!='\n'){
-							rec1[i][ind++]=c;
-							c=fgetc(fp1);
-						}
-						rec1[i][ind]='\0';
-							}
-						fp2=fopen(filePath,"r");
-						{	char c;
-							do{
-								fscanf(fp2,"%c",&c);
-							}while(c!='\n');
 
-							do{
-								fscanf(fp2,"%c",&c);
-							}while(c!='\n');
-						}
-						while(!feof(fp2)){
-							for(int i=0; i<numOfColumns2; i++){
-								char c;
-						c=fgetc(fp2);
-						int ind=0;
-						while(c!='\t'&&c!='\n'){
-							rec2[i][ind++]=c;
-							c=fgetc(fp2);
-						}
-						rec2[i][ind]='\0';
-							}
-						int i;
-						for(i=0; i<q.numberOfConditions; i++){
-							int i1=-1, i2=-1; 
-							string s1,s2;
-							s1[0]=s2[0]='~';
-							s1[1]=s2[1]='\0';
-							computeConditionFieldsJoin(q.qF.tJ.alias1,q.qF.tJ.alias2,rec1,rec2,q.cond[i],hT1,hT2,s1,s2,&i1,&i2);
-							/*printf("\ns1 %s,s2 %s, i1 %d, i2 %d\n",s1,s2,i1,i2);
-							debug();*/
-							if(isFalseCondition(q.cond[i],s1,s2,i1,i2)){
-								break;
-							}
-									
+					if(!fp1){
+						printf("file not found");
+						return;
 					}
 					
-						if(i==q.numberOfConditions){
+					int numOfColumns1, numOfColumns2;
+					table* t=findTableInDatabase(q.qF.tJ.tableName1, d);
+					hashTable hT1=t->h;
+					numOfColumns1=t->numOfColumns;
+					int numOfRecords=t->numOfRecords/P;
+					int offset=world_rank*numOfRecords;
+					if(world_rank==P-1){
+						numOfRecords+=t->numOfRecords%P;
+					}
 
-							displayRecordJoin(rec1,rec2, numOfColumns1, numOfColumns2);
+					char eat_metaDeta;
+					
+
+					do{
+						eat_metaDeta=fgetc(fp1);
+					}while(eat_metaDeta!='\n');
+					do{
+						eat_metaDeta=fgetc(fp1);
+					}while(eat_metaDeta!='\n');
+					//fseek(fp,t->fp_ep,SEEK_SET);
+					for(int i=0; i<offset; i++){
+						do{
+						eat_metaDeta=fgetc(fp1);
+						}while(eat_metaDeta!='\n');
+					}
+
+					//printf("<%s>",q.qF.tJ.tableName2);
+					filePathFromTableName(filePath,q.qF.tJ.tableName2);
+					//printf("<%s>",q.qF.tJ.tableName2);
+					FILE* fp2=fopen(filePath,"r");
+					fp2=fopen(filePath,"r");
+					
+					hashTable hT2=findTable(q.qF.tJ.tableName2,d);
+					tableNum(fp2,q.qF.tJ.tableName2,d,&numOfColumns2);
+					//printf("<%d>", numOfColumns2);
+					record rec1;
+					//printf("%d",numOfRecords);
+					while(numOfRecords--){
+
+						for(int i=0; i<numOfColumns1; i++){
+							char c;
+							c=fgetc(fp1);
+							int ind=0;
+							while(c!='\t'&&c!='\n'&&c!='^'){
+								rec1[i][ind++]=c;
+								c=fgetc(fp1);
+							}
+							rec1[i][ind]='\0';
+							//printf("%s\t",rec1[i]);
+							}
+						/*string pathOfSecondFile;
+						filePathFromTableName(pathOfSecondFile,q.qF.tJ.tableName2);*/
+						FILE* fp2=fopen(filePath,"r");
+						if(!fp2){
+							printf("not found: %s %s",filePath,q.qF.tJ.tableName2);
+							return;
 						}
+						tableNum(fp2,q.qF.tJ.tableName2,d,&numOfColumns2);
+						//printf("<%d: %d>", world_rank, numOfColumns2);
+						
+						char c='a';
+						/*do{
+							fscanf(fp2,"%c",&c);
+						}while(c!='\n');
 
-							
+						do{
+							fscanf(fp2,"%c",&c);
+						}while(c!='\n');*/
+						
+
+						while(c!='^'){
+							record rec2;
+							//printf("<%d>", numOfColumns2);
+							for(int i=0; i<numOfColumns2; i++){
+								c=fgetc(fp2);
+								int ind=0;
+								while(c!='\t'&&c!='\n'&&c!='^'){
+
+									rec2[i][ind++]=c;
+									c=fgetc(fp2);
+								}
+								rec2[i][ind]='\0';
+								//printf("<%s>",rec2[i]);
+							}
+
+							int i;
+							for(i=0; i<q.numberOfConditions; i++){
+								int i1=-1, i2=-1; 
+								string s1,s2;
+								s1[0]=s2[0]='~';
+								s1[1]=s2[1]='\0';
+								computeConditionFieldsJoin(q.qF.tJ.alias1,q.qF.tJ.alias2,rec1,rec2,q.cond[i],hT1,hT2,s1,s2,&i1,&i2);
+								
+								if(isFalseCondition(q.cond[i],s1,s2,i1,i2)){
+									break;
+									}
+										
+								}
+					
+							if(i==q.numberOfConditions){
+
+								displayRecordJoin(rec1,rec2, numOfColumns1, numOfColumns2);
+							}
+
+							if(c=='^')
+								break;	
+						
 						}
 					}
 

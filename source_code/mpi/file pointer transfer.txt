@@ -1,0 +1,34 @@
+if(world_rank==0){
+			master_function(&numberOfTables,&d);//populatesAdvAdjList from input 
+			for(int i=1; i<world_size; i++)
+				MPI_Send(&numberOfTables, 1, MPI_INT, i, 1, MPI_COMM_WORLD);
+	}
+	else{
+		MPI_Status status;
+		MPI_Recv(&numberOfTables, 1, MPI_INT, 0,1, MPI_COMM_WORLD,&status);
+	}
+	//MPI_Scatter(void* send_data, int send_count, MPI_Datatype send_datatype, void* recv_data, int recv_count, MPI_Datatype recv_datatype,int root, MPI_Comm communicator)
+	
+	MPI_Scatter(tFp, 1, MPI_INT, &localTFp, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	printf("%d %d\n", world_size, world_rank);
+	
+	//debug();
+	char tableFilePath[50];
+	string tableName;
+	
+	strcpy(tableName,"tableName");
+	
+	filePathFromTableName(tableFilePath,tableName);
+	//printf("%s",tableFilePath);
+	
+	FILE* fp=fopen(tableFilePath,"r");
+	fseek ( fp ,localTFp  , SEEK_SET );
+	if(world_size-1==world_rank){
+		printf("%d:%d\n",world_rank,(numberOfTables/P)+(numberOfTables%P));
+		populateHashTable(fp,(numberOfTables/P)+(numberOfTables%P),d);
+	}
+	
+	else{
+		printf("%d:%d\n",world_rank,(numberOfTables/P));
+		populateHashTable(fp,(numberOfTables/P),d);
+	}

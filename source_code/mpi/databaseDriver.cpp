@@ -7,7 +7,7 @@
 	#define databaseDriverDef
 	#include "databaseDriverDef.h"
 #endif
-void master_function(int *numberOfTables, database *d){
+void master_function(int *numberOfTables, database *d, int world_rank, int world_size){
 	*d=createDatabase();
 	char tableFilePath[50];
 	string tableName;
@@ -25,25 +25,7 @@ void master_function(int *numberOfTables, database *d){
 	int n;
 	fscanf(fp,"%d\n", &n);
 	*numberOfTables=n;
-	
-	tFp[0]=ftell(fp);
-	for(int i=1; i<P; i++){
-	
-		for(int j=0; j<(n)/P; j++){
-			char c;	
-			do{
-				c=fgetc(fp);
-			}while(c!='\n');
-		}
-		tFp[i]=ftell(fp);
-		//printf("%x",*fp);
-	}
-	/*for(int i=0; i<P; i++){
-		printf("%d\n",tFp[i]);
-	}
-	for(int i=0; i<P-1; i++){
-		printf("%d\n",tFp[i+1]-tFp[i]);
-	}*/
+	populateHashTable(fp, n,d, world_rank, world_size);
 }
 int main(int argc, char *argv[]){//argv[1]= Path of database directory
 	MPI_Init(NULL, NULL);
@@ -53,63 +35,62 @@ int main(int argc, char *argv[]){//argv[1]= Path of database directory
 	int world_size;
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 	database d;
-	if(world_rank==0){
-			master_function(&numberOfTables,&d);//populatesAdvAdjList from input 
-	}
-	//MPI_Scatter(void* send_data, int send_count, MPI_Datatype send_datatype, void* recv_data, int recv_count, MPI_Datatype recv_datatype,int root, MPI_Comm communicator)
+	master_function(&numberOfTables,&d,world_rank, world_size);
+	//viewDatabase(d);
+	char c;
 	
-	MPI_Scatter(tFp, 1, MPI_INT, &localTFp, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	FILE* fp=fopen("query.txt","r");
 
-	
-	//debug();
-	char tableFilePath[50];
-	string tableName;
-	
-	strcpy(tableName,"tableName");
-	
-	filePathFromTableName(tableFilePath,tableName);
-	//printf("%s",tableFilePath);
-	
-	FILE* fp=fopen(tableFilePath,"r");
-	//if(world_size==world_rank-1)
-		//populateHashTable(fp+localTFp,(numberOfTables/P)+(numberOfTables%P),d);
-	if(!fp)
-		printf("File not found");
-	else{
-		char c;
-		fseek ( fp ,localTFp  , SEEK_SET );
-		c=fgetc(fp);
-		printf("World: %d %d %d %c\n",world_size, world_rank,localTFp,c);
-		//printf("%c",c);
-	}
-	//else{
-	//	populateHashTable(fp+localTFp,(numberOfTables/P),d);
-	//}
-	
-	/*do{
-		printf("\nInput query, and type ; to quit\n");
+	do{
 		char s[queryLength];
 		int ind=0;
-		char c;
+		
+		int count=0;
 		do{
-			c=getchar();
+			count++;
+			c=fgetc(fp);
 			s[ind++]=c;
-		}while(c!=';');
+			//printf("%c",c);
 			
-		s[ind++]='\0';
-		printf("%s\n",s);
-		if(strlen(s)<4)
+		}while(c!=';');
+		
+		
+		s[ind]='\0';
+		printf("%s %d %d\n",s, count, world_rank);
+		MPI_Barrier(MPI_COMM_WORLD);
+		
+		if(count<4){
+			//printf("I will break");
 			break;
+		}
 		
 		query q;
 		
 		copyQuery(&q,extract(s));
-		execute(q,d);
+		/*	if(world_rank==0){
+				printf("I am %d\n",world_rank);*/
+		execute(q,d, world_rank);
+			/*}*/
 		//display(q);
 		
-		do{c=getchar();}while(c!='\n'&&c!='^'); //for enter in the input
-		if(c=='^')
+		/*do{c=getchar();
+			printf("%c",c);
+		}while(c!='\n'&&c!='^'); //for enter in the input
+		if(c=='^'){
+			printf("^");
 			break;
-	}while(1);*/
+		}
+		else
+			printf("Easy");*/
+		c=fgetc(fp);
+		
+		if(c=='^'){
+			
+			MPI_Finalize();
+			exit(0);
+			
+			}	
+	}while(c!='^');
+	printf("I am done : %d", world_rank);
 	MPI_Finalize();
 }
