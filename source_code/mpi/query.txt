@@ -1,0 +1,6 @@
+select RNO,NAME from student where MARKS > 1;
+select RNO,NAME from student where MARKS > 15,NAME > "xy";
+join student a student b where a.MARKS > b.MARKS;
+join student a student b where b.MARKS > a.MARKS;
+select RNO,NAME from student where MARKS > 1;
+join student a student b where b.MARKS > a.MARKS,b.RNO < a.RNO;^

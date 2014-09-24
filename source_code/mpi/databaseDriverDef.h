@@ -123,21 +123,34 @@ hashTable createHashTable(){
 }
 
 void populateHashTable(FILE* fp, int numberOfTables,database d){
-	while(numberOfTables--){
+	int flag=0;
+	//while(numberOfTables--){
 		string s,filePath;
 		int numOfRecords,numOfColumns;
 		hashTable hT;
-		fscanf(fp,"%s",s);
-		filePathFromTableName(filePath,s);
-		printf("%s",filePath);
-		FILE* tFp;
+		int ind=0;
+		char c;
+		//while(c!='\n'&&c!='^'){
+			
+			c=fgetc(fp);
+			printf("%c",c);
+			//s[ind++]=c;
+			//}
+		s[ind]='\0';
+		if(c=='^')
+			flag=1;
+		//filePathFromTableName(filePath,s);
+		//printf("%s",filePath);
+		/*FILE* tFp;
 		tFp=fopen(filePath,"r");
 		hT= createHashTable();
 		fscanf(tFp,"%d,",&numOfColumns);
 		fscanf(tFp,"%d\n",&numOfRecords);
 		insertTableMetadata(numOfColumns,hT,tFp);
 		insertTable(s,numOfColumns,numOfRecords,hT,d);
-		}
+		if(flag==1)
+			return;
+		//}*/
 }
 
 database createDatabase(){
@@ -231,7 +244,7 @@ void filePathFromTableName(char* filePath, char* fileName){
 
 	strcat(fileName,".txt");
 	
-	strcpy(filePath,"../../input/");
+	strcpy(filePath,"../../input/birt/");
 	
 	strcat(filePath,fileName);
 	
@@ -527,7 +540,14 @@ void execute(query q, database d){
 				while(!feof(fp)){
 					int i;
 					for(i=0; i<numOfColumns; i++){
-						fscanf(fp,"%s",rec[i]);
+						char c;
+						c=fgetc(fp);
+						int ind=0;
+						while(c!='\t'&&c!='\n'){
+							rec[i][ind++]=c;
+							c=fgetc(fp);
+						}
+						rec[i][ind]='\0';
 						}
 					
 					for(i=0; i<q.numberOfConditions; i++){
@@ -578,8 +598,14 @@ void execute(query q, database d){
 					record rec1, rec2;
 					while(!feof(fp1)){
 						for(int i=0; i<numOfColumns1; i++){
-							fscanf(fp1,"%s",rec1[i]);
-							//printf("%s\t",rec1[i]);
+							char c;
+						c=fgetc(fp1);
+						int ind=0;
+						while(c!='\t'&&c!='\n'){
+							rec1[i][ind++]=c;
+							c=fgetc(fp1);
+						}
+						rec1[i][ind]='\0';
 							}
 						fp2=fopen(filePath,"r");
 						{	char c;
@@ -593,8 +619,14 @@ void execute(query q, database d){
 						}
 						while(!feof(fp2)){
 							for(int i=0; i<numOfColumns2; i++){
-								fscanf(fp2,"%s",rec2[i]);
-								//printf("%s\t",rec2[i]);
+								char c;
+						c=fgetc(fp2);
+						int ind=0;
+						while(c!='\t'&&c!='\n'){
+							rec2[i][ind++]=c;
+							c=fgetc(fp2);
+						}
+						rec2[i][ind]='\0';
 							}
 						int i;
 						for(i=0; i<q.numberOfConditions; i++){
