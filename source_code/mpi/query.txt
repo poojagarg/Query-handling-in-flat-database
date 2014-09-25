@@ -1,3 +1,6 @@
+join Payments p Payments b where p.customerNumber > b.customerNumber,p.customerNumber < 115;^
+join Products p ProductLines l where p.productLine = l.productLine;^
+select customerNumber,checkNumber from Payments where customerNumber > 50;^
 select customerNumber,checkNumber from Payments where customerNumber > 400;^
 join Products p ProductLines l where p.productLine = l.productLine;^
 join student a student b where a.MARKS ! b.MARKS;^

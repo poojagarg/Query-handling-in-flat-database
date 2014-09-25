@@ -23,6 +23,8 @@
 #define hashTableSize 7
 #define databaseSize 7
 
+extern int recordCount;
+
 
 typedef char string[lengthString];
 typedef char record[maxNumOfColumns][maxLengthOfRecordColumn];
@@ -521,7 +523,8 @@ void displayRecordJoin(record rec1,record rec2, int n1, int n2){
 	for(int i=0; i<n1; i++){
 		printf("%s\t", rec2[i]);
 	}
-	printf("---");
+	//printf("---");
+	
 }
 void insertTableMetadata(int numOfColumns,hashTable hT,FILE* fp){
 	metadata m[maxNumOfColumns];
@@ -556,6 +559,7 @@ void execute(query q, database d, int world_rank){
 	switch(q.type){
 			case 0:
 				{
+					recordCount=0;
 					//printf("Entered execute");
 				filePathFromTableName(filePath,q.qF.tS.tableName);
 				FILE* fp=fopen(filePath,"r");
@@ -569,10 +573,12 @@ void execute(query q, database d, int world_rank){
 				table* t=findTableInDatabase(q.qF.tS.tableName, d);
 				hashTable hT=t->h;
 				numOfColumns=t->numOfColumns;
-				int numOfRecords=t->numOfRecords/P;
-				int offset=world_rank*numOfRecords;
-				if(world_rank==P-1){
-					numOfRecords+=t->numOfRecords%P;
+				int divisor=P/2+(P%2==0?1:0);
+				int last=(P%2==0?P-2:P-1);
+				int numOfRecords=t->numOfRecords/divisor;
+				int offset=((world_rank/2)*numOfRecords);
+				if(world_rank==last){
+					numOfRecords+=t->numOfRecords%divisor;
 				}
 
 				char eat_metaDeta;
@@ -620,7 +626,9 @@ void execute(query q, database d, int world_rank){
 					
 					if(i==q.numberOfConditions){
 						//printf("display");	
-						displayRecord(q, rec,hT, world_rank);
+						//printf("<world rank: %d :",world_rank);
+						//displayRecord(q, rec,hT, world_rank);
+						recordCount++;
 					}
 				}
 				break;
@@ -628,6 +636,7 @@ void execute(query q, database d, int world_rank){
 			break;
 
 			case 1:{
+					recordCount=0;
 					filePathFromTableName(filePath,q.qF.tJ.tableName1);
 					FILE* fp1=fopen(filePath,"r");
 					
@@ -642,11 +651,14 @@ void execute(query q, database d, int world_rank){
 					table* t=findTableInDatabase(q.qF.tJ.tableName1, d);
 					hashTable hT1=t->h;
 					numOfColumns1=t->numOfColumns;
-					int numOfRecords=t->numOfRecords/P;
-					int offset=world_rank*numOfRecords;
-					if(world_rank==P-1){
-						numOfRecords+=t->numOfRecords%P;
+					int divisor=P/2;
+					int last=(P%2==0?P-1:P-2);
+					int numOfRecords=t->numOfRecords/divisor;
+					int offset=((world_rank/2)*numOfRecords);
+					if(world_rank==last){
+						numOfRecords+=t->numOfRecords%divisor;
 					}
+					
 
 					char eat_metaDeta;
 					
@@ -731,6 +743,7 @@ void execute(query q, database d, int world_rank){
 								string s1,s2;
 								s1[0]=s2[0]='~';
 								s1[1]=s2[1]='\0';
+								//printf("<%s>",rec2[1]);
 								computeConditionFieldsJoin(q.qF.tJ.alias1,q.qF.tJ.alias2,rec1,rec2,q.cond[i],hT1,hT2,s1,s2,&i1,&i2);
 								
 								if(isFalseCondition(q.cond[i],s1,s2,i1,i2)){
@@ -740,8 +753,10 @@ void execute(query q, database d, int world_rank){
 								}
 					
 							if(i==q.numberOfConditions){
-
-								displayRecordJoin(rec1,rec2, numOfColumns1, numOfColumns2);
+								//printf("<%s>",rec2[1]);
+								//printf("<world_rank: %d :",world_rank);
+								//displayRecordJoin(rec1,rec2, numOfColumns1, numOfColumns2);
+								recordCount++;
 							}
 
 							if(c=='^')
