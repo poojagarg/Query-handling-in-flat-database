@@ -1,0 +1,8 @@
+4,3
+RNO int	NAME string	PHNO string	MARKS int
+056	pooja garg	926	20
+023	mansi	345	10
+032	xyz	32	25^
+
+
+	

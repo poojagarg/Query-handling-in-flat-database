@@ -16,7 +16,7 @@
 #define maxNumOfFields 20
 #define maxNumOfColumns 20
 #define maxTableNameLength 20
-#define lengthString 20
+#define lengthString 50
 #define queryLength 200
 #define maxNumberOfCondition 20
 #define maxLengthOfRecordColumn 20
@@ -231,7 +231,7 @@ void filePathFromTableName(char* filePath, char* fileName){
 
 	strcat(fileName,".txt");
 	
-	strcpy(filePath,"../../input/");
+	strcpy(filePath,"../../input/birt/");
 	
 	strcat(filePath,fileName);
 	
@@ -524,10 +524,23 @@ void execute(query q, database d){
 				tableNum(fp,q.qF.tS.tableName,d,&numOfColumns);
 				
 				record rec;
-				while(!feof(fp)){
+				int flag=1;
+				while(flag){
 					int i;
 					for(i=0; i<numOfColumns; i++){
-						fscanf(fp,"%s",rec[i]);
+						char c;
+						c=fgetc(fp);
+						int ind=0;
+						while(c!='\t'&&c!='\n'){
+							rec[i][ind++]=c;
+
+							c=fgetc(fp);
+							if(c=='^'){
+								flag=0;
+								break;
+							}
+						}
+						rec[i][ind]='\0';
 						}
 					
 					for(i=0; i<q.numberOfConditions; i++){
@@ -576,10 +589,22 @@ void execute(query q, database d){
 					tableNum(fp2,q.qF.tJ.tableName2,d,&numOfColumns2);
 					
 					record rec1, rec2;
-					while(!feof(fp1)){
+					int flag1=1;
+					while(flag1){
+						int flag2=1;
 						for(int i=0; i<numOfColumns1; i++){
-							fscanf(fp1,"%s",rec1[i]);
-							//printf("%s\t",rec1[i]);
+							char c;
+							c=fgetc(fp1);
+							int ind=0;
+							while(c!='\t'&&c!='\n'){
+								rec1[i][ind++]=c;
+								c=fgetc(fp1);
+								if(c=='^'){
+									flag1=0;
+									break;
+								}
+							}
+							rec1[i][ind]='\0';
 							}
 						fp2=fopen(filePath,"r");
 						{	char c;
@@ -591,10 +616,20 @@ void execute(query q, database d){
 								fscanf(fp2,"%c",&c);
 							}while(c!='\n');
 						}
-						while(!feof(fp2)){
+						while(flag2){
 							for(int i=0; i<numOfColumns2; i++){
-								fscanf(fp2,"%s",rec2[i]);
-								//printf("%s\t",rec2[i]);
+								char c;
+								c=fgetc(fp2);
+								int ind=0;
+								while(c!='\t'&&c!='\n'){
+									rec2[i][ind++]=c;
+									c=fgetc(fp2);
+									if(c=='^'){
+										flag2=0;
+										break;
+									}
+								}
+								rec2[i][ind]='\0';
 							}
 						int i;
 						for(i=0; i<q.numberOfConditions; i++){

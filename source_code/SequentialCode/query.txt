@@ -1,3 +1,4 @@
+join Products p ProductLines l where p.productLine = l.productLine;^
 select RNO,NAME from student where MARKS > 1;
 select RNO,NAME from student where MARKS > 15,NAME > "xy";
 join student a student b where a.MARKS > b.MARKS;
