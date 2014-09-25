@@ -627,7 +627,7 @@ void execute(query q, database d, int world_rank){
 					if(i==q.numberOfConditions){
 						//printf("display");	
 						//printf("<world rank: %d :",world_rank);
-						//displayRecord(q, rec,hT, world_rank);
+						displayRecord(q, rec,hT, world_rank);
 						recordCount++;
 					}
 				}
@@ -755,7 +755,7 @@ void execute(query q, database d, int world_rank){
 							if(i==q.numberOfConditions){
 								//printf("<%s>",rec2[1]);
 								//printf("<world_rank: %d :",world_rank);
-								//displayRecordJoin(rec1,rec2, numOfColumns1, numOfColumns2);
+								displayRecordJoin(rec1,rec2, numOfColumns1, numOfColumns2);
 								recordCount++;
 							}
 
