@@ -1,0 +1,1 @@
+select salary,id from input1;
