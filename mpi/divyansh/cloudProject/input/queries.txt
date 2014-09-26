@@ -1,1 +1,0 @@
-select id, salary from input1  where id = 3;

@@ -1,1 +1,0 @@
-select Manager from input2  where id = 3;

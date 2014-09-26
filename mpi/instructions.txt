@@ -1,7 +1,0 @@
-You have to create a separate folder in this directory. You can use your ID or name. Choice is yours.
-
-All the IP's for this cluster are available in a file named
-
-iplist.
-
- 

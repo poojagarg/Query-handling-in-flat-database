@@ -1,1 +1,0 @@
-select name from input1 where id=50;

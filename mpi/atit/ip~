@@ -1,6 +1,0 @@
-I've tried to measure performance of several 
-approaches to read a file into string using NIO
-(slowest for reading single file), BufferedInputStream and 
-reading the file line after line (600 ms average per pass) and then
-this stream using Filereader...
-
