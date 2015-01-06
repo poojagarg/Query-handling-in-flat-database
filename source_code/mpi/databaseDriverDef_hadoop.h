@@ -124,7 +124,16 @@ void makeQueryFile(string query, string filePath){
 		fprintf(fp,"%d:%s\n",i,query);
 	}
 }
-
+void outputMap(int world_rank, string s){// s is query
+		query q;
+		string folder="/mapOutput/";
+		string filePath=itoa(world_rank);
+		strcat(filePath,".txt");
+		strcat(folder,filePath);// /mapOutput/world_rank.txt
+		copyQuery(&q,extract(s));
+		
+		executeAndWrite(q,d, world_rank,folder);
+}
 hashTable createHashTable(){
   hashTable h=(hashTable)malloc(sizeof(node*)*hashTableSize );
   for(int i=0; i<hashTableSize; i++){
@@ -510,6 +519,16 @@ int isFalseCondition(condition cond, char* s1,char* s2,int i1,int i2){
 	}
 	return 1;
 }
+void writeRecord(query q,record rec,hashTable hT, int world_rank, string filePath){
+	FILE* fp=fopen(filePath,"w");
+	fprintf(fp,"%d: ",world_rank);
+	for(int i=0; i<q.qF.tS.numberOfFields; i++){
+		node* n=findHashTable(q.qF.tS.fieldName[i],hT);
+		fprintf(fp,"%s\t",rec[n->columnNumber]);
+		}
+	fprintf(fp,"\n");
+		
+}
 void displayRecord(query q,record rec,hashTable hT, int world_rank){
 	printf("%d: ",world_rank);
 	for(int i=0; i<q.qF.tS.numberOfFields; i++){
@@ -518,6 +537,18 @@ void displayRecord(query q,record rec,hashTable hT, int world_rank){
 		}
 	printf("\n");
 		
+}
+void writeRecordJoin(record rec1,record rec2, int n1, int n2,string filePath){
+	FILE* fp=fopen(filePath,"w");
+	fprintf(fp,"\nRecord 1\n");
+	for(int i=0; i<n1; i++){
+		fprintf(fp,"%s\t", rec1[i]);
+	}
+	fprintf(fp,"\nRecord 2\n");
+	for(int i=0; i<n1; i++){
+		fprintf(fp,"%s\t", rec2[i]);
+	}
+	fprintf(fp,"\n");
 }
 void displayRecordJoin(record rec1,record rec2, int n1, int n2){
 	printf("\nRecord 1\n");
@@ -556,6 +587,213 @@ void tableNum(FILE* fp,string tableName,database d,int *numOfColumns){
 	}while(c!='\n');
 	table* t=findTableInDatabase(tableName,d);
 	*numOfColumns=t->numOfColumns;
+}
+
+void executeAndWrite(query q, database d, int world_rank, string folder){
+	string filePath;
+
+	switch(q.type){
+			case 0:
+				{
+					//printf("Entered execute");
+				filePathFromTableName(filePath,q.qF.tS.tableName);
+				FILE* fp=fopen(filePath,"r");
+				//printf("%s",filePath);
+				
+				if(!fp){
+					printf("file not found");
+					return;
+				}
+				int numOfColumns;
+				table* t=findTableInDatabase(q.qF.tS.tableName, d);
+				hashTable hT=t->h;
+				numOfColumns=t->numOfColumns;
+				int numOfRecords=t->numOfRecords/P;
+				int offset=world_rank*numOfRecords;
+				if(world_rank==P-1){
+					numOfRecords+=t->numOfRecords%P;
+				}
+
+				char eat_metaDeta;
+				do{
+					eat_metaDeta=fgetc(fp);
+				}while(eat_metaDeta!='\n');
+				do{
+					eat_metaDeta=fgetc(fp);
+				}while(eat_metaDeta!='\n');
+				//fseek(fp,t->fp_ep,SEEK_SET);
+				for(int i=0; i<offset; i++){
+					do{
+					eat_metaDeta=fgetc(fp);
+					}while(eat_metaDeta!='\n');
+				}
+				//printf(" %d ",numOfRecords);
+				record rec;
+				while(numOfRecords--){
+					int i;
+					for(i=0; i<numOfColumns; i++){
+						char c;
+						c=fgetc(fp);
+						int ind=0;
+						while(c!='\t'&&c!='\n'){
+							rec[i][ind++]=c;
+							c=fgetc(fp);
+						}
+						rec[i][ind]='\0';
+						//printf("%s",rec[i]);
+						}
+					
+					for(i=0; i<q.numberOfConditions; i++){
+						int i1=-1, i2=-1; 
+						string s1,s2;
+						s1[0]=s2[0]='~';
+						s1[1]=s2[1]='\0';
+						computeConditionFieldsSelect(rec,q.cond[i],hT,s1,s2,&i1,&i2);
+						/*printf("\ns1 %s,s2 %s, i1 %d, i2 %d\n",s1,s2,i1,i2);
+						debug();*/
+						if(isFalseCondition(q.cond[i],s1,s2,i1,i2)){
+							break;
+						}
+									
+					}
+					
+					if(i==q.numberOfConditions){
+						//printf("display");	
+						writeRecord(q, rec,hT, world_rank,folder);
+					}
+				}
+				break;
+			}
+			break;
+
+			case 1:{
+					filePathFromTableName(filePath,q.qF.tJ.tableName1);
+					FILE* fp1=fopen(filePath,"r");
+					
+
+
+					if(!fp1){
+						printf("file not found");
+						return;
+					}
+					
+					int numOfColumns1, numOfColumns2;
+					table* t=findTableInDatabase(q.qF.tJ.tableName1, d);
+					hashTable hT1=t->h;
+					numOfColumns1=t->numOfColumns;
+					int numOfRecords=t->numOfRecords/P;
+					int offset=world_rank*numOfRecords;
+					if(world_rank==P-1){
+						numOfRecords+=t->numOfRecords%P;
+					}
+
+					char eat_metaDeta;
+					
+
+					do{
+						eat_metaDeta=fgetc(fp1);
+					}while(eat_metaDeta!='\n');
+					do{
+						eat_metaDeta=fgetc(fp1);
+					}while(eat_metaDeta!='\n');
+					//fseek(fp,t->fp_ep,SEEK_SET);
+					for(int i=0; i<offset; i++){
+						do{
+						eat_metaDeta=fgetc(fp1);
+						}while(eat_metaDeta!='\n');
+					}
+
+					//printf("<%s>",q.qF.tJ.tableName2);
+					filePathFromTableName(filePath,q.qF.tJ.tableName2);
+					//printf("<%s>",q.qF.tJ.tableName2);
+					FILE* fp2=fopen(filePath,"r");
+					if(!fp2){
+						return;
+					}
+					
+					hashTable hT2=findTable(q.qF.tJ.tableName2,d);
+					tableNum(fp2,q.qF.tJ.tableName2,d,&numOfColumns2);
+					//printf("<%d>", numOfColumns2);
+					record rec1;
+					//printf("%d",numOfRecords);
+					while(numOfRecords--){
+
+						for(int i=0; i<numOfColumns1; i++){
+							char c;
+							c=fgetc(fp1);
+							int ind=0;
+							while(c!='\t'&&c!='\n'&&c!='^'){
+								rec1[i][ind++]=c;
+								c=fgetc(fp1);
+							}
+							rec1[i][ind]='\0';
+							//printf("%s\t",rec1[i]);
+							}
+						/*string pathOfSecondFile;
+						filePathFromTableName(pathOfSecondFile,q.qF.tJ.tableName2);*/
+						FILE* fp2=fopen(filePath,"r");
+						if(!fp2){
+							printf("not found: %s %s",filePath,q.qF.tJ.tableName2);
+							return;
+						}
+						tableNum(fp2,q.qF.tJ.tableName2,d,&numOfColumns2);
+						//printf("<%d: %d>", world_rank, numOfColumns2);
+						
+						char c='a';
+						/*do{
+							fscanf(fp2,"%c",&c);
+						}while(c!='\n');
+
+						do{
+							fscanf(fp2,"%c",&c);
+						}while(c!='\n');*/
+						
+
+						while(c!='^'){
+							record rec2;
+							//printf("<%d>", numOfColumns2);
+							for(int i=0; i<numOfColumns2; i++){
+								c=fgetc(fp2);
+								int ind=0;
+								while(c!='\t'&&c!='\n'&&c!='^'){
+
+									rec2[i][ind++]=c;
+									c=fgetc(fp2);
+								}
+								rec2[i][ind]='\0';
+								//printf("<%s>",rec2[i]);
+							}
+
+							int i;
+							for(i=0; i<q.numberOfConditions; i++){
+								int i1=-1, i2=-1; 
+								string s1,s2;
+								s1[0]=s2[0]='~';
+								s1[1]=s2[1]='\0';
+								computeConditionFieldsJoin(q.qF.tJ.alias1,q.qF.tJ.alias2,rec1,rec2,q.cond[i],hT1,hT2,s1,s2,&i1,&i2);
+								
+								if(isFalseCondition(q.cond[i],s1,s2,i1,i2)){
+									break;
+									}
+										
+								}
+					
+							if(i==q.numberOfConditions){
+
+								writeRecordJoin(rec1,rec2, numOfColumns1, numOfColumns2,folder);
+							}
+
+							if(c=='^')
+								break;	
+						
+						}
+					}
+
+				}
+					break;
+			
+			/*case 2:break;*/
+		}
 }
 
 void execute(query q, database d, int world_rank){

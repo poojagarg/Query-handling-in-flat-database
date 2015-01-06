@@ -1,7 +1,12 @@
+/*
+Meta-data of all tables of the database is written in a file Input/birt/tablename.txt 
+*/
 #ifndef databaseDriverDef
 	#define databaseDriverDef_1
 	#include "databaseDriverDef_1.h"
 #endif
+
+char pathOfDatabaseDirectory[100];
 
 int main(int argc, char *argv[]){//argv[1]= Path of database directory
 	
@@ -10,7 +15,8 @@ int main(int argc, char *argv[]){//argv[1]= Path of database directory
 	string tableName;
 	
 	strcpy(tableName,"tableName");
-	
+	strcpy(pathOfDatabaseDirectory,argv[1]);
+
 	filePathFromTableName(tableFilePath,tableName);
 	printf("%s",tableFilePath);
 	

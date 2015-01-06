@@ -7,6 +7,7 @@
 	#define databaseDriverDef
 	#include "databaseDriverDef.h"
 #endif
+char pathOfDatabaseDirectory[100];
 void master_function(int *numberOfTables, database *d, int world_rank, int world_size){
 	*d=createDatabase();
 	char tableFilePath[50];
@@ -38,7 +39,7 @@ int main(int argc, char *argv[]){//argv[1]= Path of database directory
 	master_function(&numberOfTables,&d,world_rank, world_size);
 	//viewDatabase(d);
 	char c;
-	
+	strcpy(pathOfDatabaseDirectory,argv[1]);
 	FILE* fp=fopen("query.txt","r");
 
 	do{
@@ -91,6 +92,6 @@ int main(int argc, char *argv[]){//argv[1]= Path of database directory
 			
 			}	
 	}while(c!='^');
-	printf("I am done : %d", world_rank);
+	//printf("I am done : %d", world_rank);
 	MPI_Finalize();
 }

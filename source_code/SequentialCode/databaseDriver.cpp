@@ -1,3 +1,6 @@
+/*
+Format of Query: As given in query.txt
+*/
 #ifndef databaseDriverDef
 	#define databaseDriverDef
 	#include "databaseDriverDef.h"
@@ -6,7 +9,7 @@
 int main(int argc, char *argv[]){//argv[1]= Path of database directory
 	database d=createDatabase();
 	do{
-		printf("\nInput query, and type ; to quit\n");
+		printf("\nInput query, and type ^ in the end of query if that is the last query.\n");
 		char s[queryLength];
 		int ind=0;
 		char c;

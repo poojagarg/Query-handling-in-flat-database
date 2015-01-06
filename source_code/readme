@@ -1,0 +1,49 @@
+A rudimentary distributed (relational) database is designed to run on a cluster of desktop PCs in openMPI programming environment. The sequential code is written in c++.
+
+Implementation can to handle two possible data distribution models-
+Data Distribution Models: (a) Partitioned Model: Each (relational) table is partitioned (roughly) into the nodes in the cluster (roughly) equally i.e. same number of records / rows per node.   (b) Replicated Model: Each table is (fully) replicated in two or more nodes but not all nodes. 
+
+Database Realization: The database is realized on flat files: i.e. each partition / replica of a table is a text file in a node, where each record/row is a line in the file, and field values appear as a comma-separated list.
+
+Database Features: 
+Datatypes are string and int.
+The only relevant queries are select and join. Format of such a query is given in file query.txt.
+
+SequentialCode
+
+databaseDriver.cpp
+	uses auxillary file databaseDriverDef.h. For each query, meta-data of table is populated in a hashtable and query is then executed.
+	To compile: g++ databaseDriver.cpp -o databaseDriver
+	To run: ./databaseDriver 
+databaseDriver_1.cpp
+	uses auxillary file databaseDriverDef_1.h. Meta-data of all the tables in a database as given in file input/birt/tablename.txt is populated in hashtable only once and stored as a database.
+	Now each query is executed on the database whose meta-data is pre-computed.
+	To compile: g++ databaseDriver_1.cpp -o databaseDriver
+	To run: ./databaseDriver Path_of_database_directory
+	In this project, this path is Input/birt
+
+MPI
+
+databaseDriver.cpp- Partition model
+	Strategy used- For each query, master node first finds the 'p' starting positions in file pointer for p processors. Now each processor is given it's starting position and # of records to process from that starting position, and the query is executed over those records only.
+	Instructions-
+	uses auxillary file databaseDriverDef.h, mpiDef.h. For each query, meta-data of table is populated in a hashtable and query is then executed.
+	To compile: mpic++ databaseDriver.cpp 
+	To run: mpirun -np <number of processors> -host <space separated IP addresses> ./a.out
+	For example: mpirun -np 3 -host 172.18.4.103,172.18.4.119,172.18.4.46 ./a.out
+	First IP address is that of master node.
+	In mpiDef.h, variable P is number of processors. Change it accordingly before compilation.
+
+databaseDriverReplicated.cpp
+	Strategy used- For each select query, odd nodes are used, and for join query, even nodes are used. Master node first finds the 'p' starting positions in file pointer for p such processors. Now each processor is given it's starting position and # of records to process from that starting position, and the query is executed over those records only.
+	Fault tolerance though not yet incorporated, can be implemented by using even processors in select type and odd processors in join type in case of failure.
+	Instructions-
+	uses auxillary file databaseDriverDefReplicated.h, mpiDef.h. For each query, meta-data of table is populated in a hashtable and query is then executed.
+	To compile: mpic++ databaseDriverReplicated.cpp 
+	To run: mpirun -np <number of processors> -host <space separated IP addresses> ./a.out
+	For example: mpirun -np 3 -host 172.18.4.103,172.18.4.119,172.18.4.46 ./a.out
+	First IP address is that of master node.
+	In mpiDef.h, variable P is number of processors. Change it accordingly before compilation.
+	
+
+

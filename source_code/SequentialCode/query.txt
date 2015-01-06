@@ -1,7 +1,22 @@
-join Products p ProductLines l where p.productLine = l.productLine;^
+join Products p ProductLines l where p.productLine = l.productLine;
 select RNO,NAME from student where MARKS > 1;
 select RNO,NAME from student where MARKS > 15,NAME > "xy";
 join student a student b where a.MARKS > b.MARKS;
 join student a student b where b.MARKS > a.MARKS;
 select RNO,NAME from student where MARKS > 1;
 join student a student b where b.MARKS > a.MARKS,b.RNO < a.RNO;^
+
+Instructions-
+
+Queries till symbol '^' are executed.
+It is important to give relevant space at the positions otherwise there would be parsing error. Note no space in field list, condition list after ','
+Format-
+// Format for Select: select <list of field_names> from <table_name> where <cond> 
+	/*displays all the specified columns of those records which satisfy the condition*/
+// Format for INNER Join: join <table_name1> alias1 <table_name2> alias2 where <cond> # alias1 and alias2 are characters strictly
+	/*displays the table formed after the join */
+// Keywords: join, select, from, where
+// <cond>: field <RelationalOp> <f> (Semantics: f.type=field.type) ab > bc,a < d; //take care of space
+// <f>: field || constant  
+// <list of field_names>: field <list> 
+// <list>: , field <list> || NULL

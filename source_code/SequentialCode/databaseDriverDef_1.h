@@ -23,6 +23,7 @@
 #define hashTableSize 7
 #define databaseSize 7
 
+extern char pathOfDatabaseDirectory[100];
 
 typedef char string[lengthString];
 typedef char record[maxNumOfColumns][maxLengthOfRecordColumn];
@@ -231,7 +232,7 @@ void filePathFromTableName(char* filePath, char* fileName){
 
 	strcat(fileName,".txt");
 	
-	strcpy(filePath,"../../input/birt/");
+	strcpy(filePath,"pathOfDatabaseDirectory");
 	
 	strcat(filePath,fileName);
 	
